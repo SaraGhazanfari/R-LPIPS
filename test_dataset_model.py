@@ -27,6 +27,7 @@ parser.add_argument('--model_path', type=str, default=None,
 parser.add_argument('--from_scratch', action='store_true', help='model was initialized from scratch')
 parser.add_argument('--train_trunk', action='store_true', help='model trunk was trained/tuned')
 parser.add_argument('--version', type=str, default='0.1', help='v0.1 is latest, v0.0 was original release')
+parser.add_argument('--data_path', action='store_true', help='path of data')
 parser.add_argument('--test_mode', action='store_true', help='natural or adversarial', default='natural')
 parser.add_argument('--perturbed_input', action='store_true', help='x_0, x_1 or x_0/x_1', default=None)
 parser.add_argument('--attack_type', action='store_true', help='linf, l2', default=None)
@@ -50,8 +51,8 @@ if __name__ == '__main__':
 
     # initialize data loader
     for dataset in opt.datasets:
-        data_loader = dl.CreateDataLoader(dataset, dataset_mode=opt.dataset_mode, batch_size=opt.batch_size,
-                                          nThreads=opt.nThreads)
+        data_loader = dl.CreateDataLoader(dataset, data_root=opt.data_path, dataset_mode=opt.dataset_mode,
+                                          batch_size=opt.batch_size, nThreads=opt.nThreads)
 
         # evaluate model on data
         if (opt.dataset_mode == '2afc'):

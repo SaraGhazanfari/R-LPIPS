@@ -42,6 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('--from_scratch', action='store_true', help='model was initialized from scratch')
     parser.add_argument('--train_trunk', action='store_true', help='model trunk was trained/tuned')
     parser.add_argument('--train_plot', action='store_true', help='plot saving')
+    parser.add_argument('--data_path', action='store_true', help='path of data')
     parser.add_argument('--train_mode', action='store_true', help='natural or adversarial training', default='natural')
     parser.add_argument('--perturbed_input', action='store_true', help='x_0, x_1 or x_0/x_1', default=None)
     parser.add_argument('--attack_type', action='store_true', help='linf, l2', default=None)
@@ -57,8 +58,8 @@ if __name__ == '__main__':
                             train_mode=opt.train_mode, perturbed_input=opt.perturbed_input, attack_type=opt.attack_type)
 
     # load data from all training sets
-    data_loader = dl.CreateDataLoader(opt.datasets, dataset_mode='2afc', batch_size=opt.batch_size,
-                                      serial_batches=False, nThreads=opt.nThreads)
+    data_loader = dl.CreateDataLoader(opt.datasets, data_root=opt.data_path, dataset_mode='2afc',
+                                      batch_size=opt.batch_size, serial_batches=False, nThreads=opt.nThreads)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
     D = len(dataset)
