@@ -18,9 +18,9 @@ class Trainer():
     def name(self):
         return self.model_name
 
-    def initialize(self, model='lpips', net='alex', colorspace='Lab', pnet_rand=False, pnet_tune=False, model_path=None,
-                   use_gpu=True, printNet=False, spatial=False,
-                   is_train=False, lr=.0001, beta1=0.5, version='0.1', gpu_ids=None):
+    def __init__(self, model='lpips', net='alex', colorspace='Lab', pnet_rand=False, pnet_tune=False, model_path=None,
+                 use_gpu=True, printNet=False, spatial=False, is_train=False, lr=.0001, beta1=0.5, version='0.1',
+                 gpu_ids=None, train_mode='natural', perturbed_input=None, attack_type=None):
         '''
         INPUTS
             model - ['lpips'] for linearly calibrated network
@@ -47,17 +47,20 @@ class Trainer():
         self.is_train = is_train
         self.spatial = spatial
         self.model_name = '%s [%s]' % (model, net)
+        self.train_mode = train_mode
+        self.perturbed_input = perturbed_input
+        self.attack_type = attack_type
 
-        if (self.model == 'lpips'):  # pretrained net + linear layer
+        if self.model == 'lpips':  # pretrained net + linear layer
             self.net = lpips.LPIPS(pretrained=not is_train, net=net, version=version, lpips=True, spatial=spatial,
                                    pnet_rand=pnet_rand, pnet_tune=pnet_tune,
                                    use_dropout=True, model_path=model_path, eval_mode=False)
-        elif (self.model == 'baseline'):  # pretrained network
+        elif self.model == 'baseline':  # pretrained network
             self.net = lpips.LPIPS(pnet_rand=pnet_rand, net=net, lpips=False)
-        elif (self.model in ['L2', 'l2']):
+        elif self.model in ['L2', 'l2']:
             self.net = lpips.L2(use_gpu=use_gpu, colorspace=colorspace)  # not really a network, only for testing
             self.model_name = 'L2'
-        elif (self.model in ['DSSIM', 'dssim', 'SSIM', 'ssim']):
+        elif self.model in ['DSSIM', 'dssim', 'SSIM', 'ssim']:
             self.net = lpips.DSSIM(use_gpu=use_gpu, colorspace=colorspace)
             self.model_name = 'SSIM'
         else:
@@ -75,14 +78,14 @@ class Trainer():
         else:  # test mode
             self.net.eval()
 
-        if (use_gpu):
+        if use_gpu:
             a = torch.ones(5, device=self.gpu_ids[0])
             self.net.to(self.gpu_ids[0])
             # self.net = torch.nn.DataParallel(self.net, device_ids=gpu_ids)
             if (self.is_train):
                 self.rankLoss = self.rankLoss.to(device=self.gpu_ids[0])  # just put this on GPU0
 
-        if (printNet):
+        if printNet:
             print('---------- Networks initialized -------------')
             networks.print_network(self.net)
             print('-----------------------------------------------')
@@ -106,7 +109,7 @@ class Trainer():
 
     def clamp_weights(self):
         for module in self.net.modules():
-            if (hasattr(module, 'weight') and module.kernel_size == (1, 1)):
+            if hasattr(module, 'weight') and module.kernel_size == (1, 1):
                 module.weight.data = torch.clamp(module.weight.data, min=0)
 
     def set_input(self, data):
@@ -115,7 +118,7 @@ class Trainer():
         self.input_p1 = data['p1']
         self.input_judge = data['judge']
 
-        if (self.use_gpu):
+        if self.use_gpu:
             self.input_ref = self.input_ref.to(device=self.gpu_ids[0])
             self.input_p0 = self.input_p0.to(device=self.gpu_ids[0])
             self.input_p1 = self.input_p1.to(device=self.gpu_ids[0])
@@ -125,7 +128,7 @@ class Trainer():
         self.var_p0 = Variable(self.input_p0, requires_grad=True)
         self.var_p1 = Variable(self.input_p1, requires_grad=True)
 
-    def pgd_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
+    def pgd_linf_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
         delta = torch.zeros_like(self.var_p0, requires_grad=True).to(cuda_device)
         for t in range(num_iter):
             if idx == 0:
@@ -143,9 +146,54 @@ class Trainer():
             delta.grad.zero_()
         return delta.detach()
 
+    def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=1.0, idx=0):
+        batch_size = self.var_p0.shape[0]
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(cuda_device)
+        for t in range(num_iter):
+            if idx == 0:
+                d0 = self.forward(self.var_ref, self.var_p0 + delta)
+                d1 = self.forward(self.var_ref, self.var_p1)
+            else:
+                d0 = self.forward(self.var_ref, self.var_p0)
+                d1 = self.forward(self.var_ref, self.var_p1 + delta)
+
+            judge = Variable(1. * self.input_judge).view(d0.size())
+
+            loss_total = lpips.BCERankingLoss().forward(d0, d1, judge * 2. - 1.)
+            loss_total.backward()
+            delta.data = delta + alpha * delta.grad.detach().sign()
+            delta.grad.zero_()
+            delta_norms = torch.norm(delta.view(batch_size, -1), p=2, dim=1)
+            factor = epsilon / delta_norms
+            factor = torch.min(factor, torch.ones_like(delta_norms))
+            delta.data = delta * factor.view(-1, 1, 1, 1)
+
+        return delta.detach()
+
+    def generate_attack_on_inputs(self):
+        if 'x_0' in self.perturbed_input:
+            if self.attack_type == 'l2':
+                delta = self.pgd_l2_attack()
+                self.var_p0 += delta
+
+            elif self.attack_type == 'linf':
+                delta = self.pgd_linf_attack()
+                self.var_p0 += delta
+
+        if 'x_1' in self.perturbed_input:
+            if self.attack_type == 'l2':
+                delta = self.pgd_l2_attack(idx=1)
+                self.var_p1 += delta
+
+            elif self.attack_type == 'linf':
+                delta = self.pgd_linf_attack(idx=1)
+                self.var_p1 += delta
+
     def forward_train(self):  # run forward pass
-        delta = self.pgd_attack()
-        self.d0 = self.forward(self.var_ref, self.var_p0 + delta)
+        if self.train_mode == 'adversarial':
+            self.generate_attack_on_inputs()
+
+        self.d0 = self.forward(self.var_ref, self.var_p0)
         self.d1 = self.forward(self.var_ref, self.var_p1)
         self.acc_r = self.compute_accuracy(self.d0, self.d1, self.input_judge)
 
@@ -226,47 +274,6 @@ class Trainer():
         np.savetxt(os.path.join(self.save_dir, 'done_flag'), [flag, ], fmt='%i')
 
 
-def pgd_attack(p0, p1, ref, judge, trainer, num_iter=50, alpha=1e4, epsilon=8/255, idx=0):
-    delta = torch.zeros_like(p0, requires_grad=True).to(cuda_device)
-    for t in range(num_iter):
-        if idx == 0:
-            d0 = trainer.forward(ref, p0+delta)
-            d1 = trainer.forward(ref, p1)
-        else:
-            d0 = trainer.forward(ref, p0)
-            d1 = trainer.forward(ref, p1+delta)
-
-        judge = Variable(1. * judge).view(d0.size())
-
-        loss_total = lpips.BCERankingLoss().forward(d0, d1, judge * 2. - 1.)
-        loss_total.backward()
-        delta.data = (delta + alpha*delta.grad.detach().sign()).clamp(-epsilon,epsilon)
-        delta.grad.zero_()
-    return delta.detach()
-
-def pgd_l2_attack(p0, p1, ref, judge, trainer, num_iter=50, alpha=1e4, epsilon=1.0, idx=0):
-    delta = torch.zeros_like(p0, requires_grad=True).to(cuda_device)
-    for t in range(num_iter):
-        if idx == 0:
-            d0 = trainer.forward(ref, p0+delta)
-            d1 = trainer.forward(ref, p1)
-        else:
-            d0 = trainer.forward(ref, p0)
-            d1 = trainer.forward(ref, p1+delta)
-
-        judge = Variable(1. * judge).view(d0.size())
-
-        loss_total = lpips.BCERankingLoss().forward(d0, d1, judge * 2. - 1.)
-        loss_total.backward()
-        delta.data = delta + alpha*delta.grad.detach().sign()
-        delta.grad.zero_()
-        delta_norms = torch.norm(delta.view(p0.shape[0], -1), p=2, dim=1)
-        factor = epsilon / delta_norms
-        factor = torch.min(factor, torch.ones_like(delta_norms))
-        delta.data = delta * factor.view(-1, 1, 1, 1)
-    return delta.detach()
-
-
 def score_2afc_dataset(data_loader, trainer, name=''):
     ''' Function computes Two Alternative Forced Choice (2AFC) score using
         distance function 'func' in dataset 'data_loader'
@@ -291,15 +298,12 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     gts = []
 
     for data in tqdm(data_loader.load_data(), desc=name):
-        p0 = data['p0'].to(cuda_device)
-        p1 = data['p1'].to(cuda_device)
-        ref = data['ref'].to(cuda_device)
-        judge = data['judge'].to(cuda_device)
-        delta1 = pgd_l2_attack(p0, p1, ref, judge, trainer)
-        delta2 = pgd_l2_attack(p0, p1, ref, judge, trainer, idx=1)
-        d0s += trainer.forward(ref, p0+delta1).data.cpu().numpy().flatten().tolist()
-        d1s += trainer.forward(ref, p1+delta2).data.cpu().numpy().flatten().tolist()
-        gts += judge.cpu().numpy().flatten().tolist()
+        trainer.set_input(data)
+        if trainer.train_mode == 'adversarial':
+            trainer.generate_attack_on_inputs()
+        d0s += trainer.forward(trainer.ref, trainer.p0).data.cpu().numpy().flatten().tolist()
+        d1s += trainer.forward(trainer.ref, trainer.p1).data.cpu().numpy().flatten().tolist()
+        gts += trainer.judge.cpu().numpy().flatten().tolist()
 
     d0s = np.array(d0s)
     d1s = np.array(d1s)
@@ -309,7 +313,7 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     return (np.mean(scores), dict(d0s=d0s, d1s=d1s, gts=gts, scores=scores))
 
 
-def score_jnd_dataset(data_loader, func, name=''):
+def score_jnd_dataset(data_loader, trainer, name=''):
     ''' Function computes JND score using distance function 'func' in dataset 'data_loader'
     INPUTS
         data_loader - CustomDatasetDataLoader object - contains a JNDDataset inside
@@ -328,8 +332,11 @@ def score_jnd_dataset(data_loader, func, name=''):
     gts = []
 
     for data in tqdm(data_loader.load_data(), desc=name):
-        ds += func(data['p0'], data['p1']).data.cpu().numpy().tolist()
-        gts += data['same'].cpu().numpy().flatten().tolist()
+        trainer.set_input(data)
+        if trainer.train_mode == 'adversarial':
+            trainer.generate_attack_on_inputs()
+        ds += trainer.forward(trainer.p0, trainer.p1).data.cpu().numpy().tolist()
+        gts += trainer.same.cpu().numpy().flatten().tolist()
 
     sames = np.array(gts)
     ds = np.array(ds)
@@ -346,4 +353,4 @@ def score_jnd_dataset(data_loader, func, name=''):
     recs = TPs / (TPs + FNs)
     score = lpips.voc_ap(recs, precs)
 
-    return (score, dict(ds=ds, sames=sames))
+    return score, dict(ds=ds, sames=sames)
