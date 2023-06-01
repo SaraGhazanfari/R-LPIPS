@@ -12,16 +12,18 @@ parser.add_argument('--use_gpu', action='store_true', help='turn on flag to use 
 
 opt = parser.parse_args()
 
+my_device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
+
 loss_fn = lpips.LPIPS(net='vgg')
 if(opt.use_gpu):
-    loss_fn.cuda()
+    loss_fn.to(my_device)
 
 ref = lpips.im2tensor(lpips.load_image(opt.ref_path))
 pred = Variable(lpips.im2tensor(lpips.load_image(opt.pred_path)), requires_grad=True)
 if(opt.use_gpu):
     with torch.no_grad():
-        ref = ref.cuda()
-        pred = pred.cuda()
+        ref = ref.to(my_device)
+        pred = pred.to(my_device)
 
 optimizer = torch.optim.Adam([pred,], lr=1e-3, betas=(0.9, 0.999))
 

@@ -42,15 +42,15 @@ if __name__ == '__main__':
     parser.add_argument('--from_scratch', action='store_true', help='model was initialized from scratch')
     parser.add_argument('--train_trunk', action='store_true', help='model trunk was trained/tuned')
     parser.add_argument('--train_plot', action='store_true', help='plot saving')
-    parser.add_argument('--data_path', action='store_true', help='path of data')
-    parser.add_argument('--train_mode', action='store_true', help='natural or adversarial training', default='natural')
-    parser.add_argument('--perturbed_input', action='store_true', help='x_0, x_1 or x_0/x_1', default=None)
-    parser.add_argument('--attack_type', action='store_true', help='linf, l2', default=None)
+    parser.add_argument('--data_path', type=str, help='path of data')
+    parser.add_argument('--train_mode', type=str, help='natural or adversarial training', default='natural')
+    parser.add_argument('--perturbed_input', type=str, help='x_0, x_1 or x_0/x_1', default=None)
+    parser.add_argument('--attack_type', type=str, help='linf, l2', default=None)
 
     opt = parser.parse_args()
     opt.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
-    if (not os.path.exists(opt.save_dir)):
-        os.mkdir(opt.save_dir)
+    if not os.path.exists(opt.save_dir):
+        os.makedirs(opt.save_dir)
 
     # initialize model
     trainer = lpips.Trainer(model=opt.model, net=opt.net, use_gpu=opt.use_gpu, is_train=True,

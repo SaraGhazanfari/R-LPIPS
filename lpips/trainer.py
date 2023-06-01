@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import torch
-from torch import nn
 from collections import OrderedDict
 from torch.autograd import Variable
 from scipy.ndimage import zoom
@@ -10,9 +9,7 @@ from tqdm import tqdm
 import lpips
 import os
 
-mps_device = torch.device("mps")
-cuda_device = torch.device("cuda:0")
-
+my_device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
 
 class Trainer():
     def name(self):
@@ -41,7 +38,7 @@ class Trainer():
         '''
 
         self.use_gpu = use_gpu
-        self.gpu_ids = [cuda_device]
+        self.gpu_ids = [my_device]
         self.model = model
         self.net = net
         self.is_train = is_train
@@ -97,7 +94,7 @@ class Trainer():
         OUTPUT
             computed distances between in0 and in1
         '''
-        return self.net.forward(in0.to(cuda_device), in1.to(cuda_device), retPerLayer=retPerLayer)
+        return self.net.forward(in0.to(my_device), in1.to(my_device), retPerLayer=retPerLayer)
 
     # ***** TRAINING FUNCTIONS *****
     def optimize_parameters(self):
@@ -129,7 +126,7 @@ class Trainer():
         self.var_p1 = Variable(self.input_p1, requires_grad=True)
 
     def pgd_linf_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
-        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(cuda_device)
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
         for t in range(num_iter):
             if idx == 0:
                 d0 = self.forward(self.var_ref, self.var_p0 + delta)
@@ -148,7 +145,7 @@ class Trainer():
 
     def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=1.0, idx=0):
         batch_size = self.var_p0.shape[0]
-        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(cuda_device)
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
         for t in range(num_iter):
             if idx == 0:
                 d0 = self.forward(self.var_ref, self.var_p0 + delta)
@@ -174,20 +171,20 @@ class Trainer():
         if 'x_0' in self.perturbed_input:
             if self.attack_type == 'l2':
                 delta = self.pgd_l2_attack()
-                self.var_p0 += delta
+                self.var_p0 = self.var_p0 + delta
 
             elif self.attack_type == 'linf':
                 delta = self.pgd_linf_attack()
-                self.var_p0 += delta
+                self.var_p0 = self.var_p0 + delta
 
         if 'x_1' in self.perturbed_input:
             if self.attack_type == 'l2':
                 delta = self.pgd_l2_attack(idx=1)
-                self.var_p1 += delta
+                self.var_p1 = self.var_p1 + delta
 
             elif self.attack_type == 'linf':
                 delta = self.pgd_linf_attack(idx=1)
-                self.var_p1 += delta
+                self.var_p1 = self.var_p1 + delta
 
     def forward_train(self):  # run forward pass
         if self.train_mode == 'adversarial':

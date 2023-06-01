@@ -30,7 +30,6 @@ def make_dataset(dirs, mode='img'):
 
     images = []
     for dir in dirs:
-        print(dir)
         assert os.path.isdir(dir), '%s is not a valid directory' % dir
         for root, _, fnames in sorted(os.walk(dir)):
             for fname in fnames:

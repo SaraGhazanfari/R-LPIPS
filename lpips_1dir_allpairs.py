@@ -2,6 +2,7 @@ import argparse
 import os
 import lpips
 import numpy as np
+import torch
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-d','--dir', type=str, default='./imgs/ex_dir_pair')
@@ -12,11 +13,11 @@ parser.add_argument('-N', type=int, default=None)
 parser.add_argument('--use_gpu', action='store_true', help='turn on flag to use GPU')
 
 opt = parser.parse_args()
-
+my_device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
 ## Initializing the model
 loss_fn = lpips.LPIPS(net='alex',version=opt.version)
 if(opt.use_gpu):
-	loss_fn.cuda()
+	loss_fn.to(my_device)
 
 # crawl directories
 f = open(opt.out,'w')
@@ -29,7 +30,7 @@ dists = []
 for (ff,file) in enumerate(files[:-1]):
 	img0 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir,file))) # RGB image from [-1,1]
 	if(opt.use_gpu):
-		img0 = img0.cuda()
+		img0 = img0.to(my_device)
 
 	if(opt.all_pairs):
 		files1 = files[ff+1:]
@@ -40,7 +41,7 @@ for (ff,file) in enumerate(files[:-1]):
 		img1 = lpips.im2tensor(lpips.load_image(os.path.join(opt.dir,file1)))
 
 		if(opt.use_gpu):
-			img1 = img1.cuda()
+			img1 = img1.to(my_device)
 
 		# Compute distance
 		dist01 = loss_fn.forward(img0,img1)
