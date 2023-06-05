@@ -298,9 +298,9 @@ def score_2afc_dataset(data_loader, trainer, name=''):
         trainer.set_input(data)
         if trainer.train_mode == 'adversarial':
             trainer.generate_attack_on_inputs()
-        d0s += trainer.forward(trainer.ref, trainer.p0).data.cpu().numpy().flatten().tolist()
-        d1s += trainer.forward(trainer.ref, trainer.p1).data.cpu().numpy().flatten().tolist()
-        gts += trainer.judge.cpu().numpy().flatten().tolist()
+        d0s += trainer.forward(trainer.var_ref, trainer.var_p0).data.cpu().numpy().flatten().tolist()
+        d1s += trainer.forward(trainer.var_ref, trainer.var_p1).data.cpu().numpy().flatten().tolist()
+        gts += trainer.input_judge.cpu().numpy().flatten().tolist()
 
     d0s = np.array(d0s)
     d1s = np.array(d1s)
@@ -332,7 +332,7 @@ def score_jnd_dataset(data_loader, trainer, name=''):
         trainer.set_input(data)
         if trainer.train_mode == 'adversarial':
             trainer.generate_attack_on_inputs()
-        ds += trainer.forward(trainer.p0, trainer.p1).data.cpu().numpy().tolist()
+        ds += trainer.forward(trainer.var_p0, trainer.var_p1).data.cpu().numpy().tolist()
         gts += trainer.same.cpu().numpy().flatten().tolist()
 
     sames = np.array(gts)
