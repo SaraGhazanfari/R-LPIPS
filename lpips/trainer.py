@@ -11,6 +11,7 @@ import os
 
 my_device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
 
+
 class Trainer():
     def name(self):
         return self.model_name
@@ -167,24 +168,55 @@ class Trainer():
 
         return delta.detach()
 
+    def semantic_similarity_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
+        sim_ij = torch.zeros((self.var_p0.shape[0], self.var_p0.shape[0]), device=my_device)
+        for t in range(num_iter):
+            if idx == 0:
+                sim_ii = self.net.forward(self.var_p0 + delta, self.var_ref)
+                for sample_idx in range(self.var_p0.shape[0]):
+                    sim_ij[sample_idx] = self.net(self.var_p0 + delta, self.var_ref[sample_idx]).squeeze()
+                    sim_ij[sample_idx, sample_idx] = float('inf')
+            else:
+                sim_ii = self.net.forward(self.var_p1 + delta, self.var_ref)
+                for sample_idx in range(self.var_p1.shape[0]):
+                    sim_ij[sample_idx] = self.net(self.var_p1 + delta, self.var_ref[sample_idx]).squeeze()
+                    sim_ij[sample_idx, sample_idx] = float('inf')
+            print(sim_ij)
+            print(sim_ii)
+            loss_total = torch.mean(torch.max(sim_ii.reshape(-1) - torch.min(sim_ij, dim=1).values,
+                                              torch.zeros(self.var_p0.shape[0], device=my_device)))
+
+            loss_total.backward()
+            delta.data = (delta - alpha * delta.grad.detach().sign()).clamp(-epsilon, epsilon)
+            delta.grad.zero_()
+
+        return delta.detach()
+
     def generate_attack_on_inputs(self):
         if 'x_0' in self.perturbed_input:
             if self.attack_type == 'l2':
                 delta = self.pgd_l2_attack()
-                self.var_p0 = self.var_p0 + delta
 
             elif self.attack_type == 'linf':
                 delta = self.pgd_linf_attack()
-                self.var_p0 = self.var_p0 + delta
+
+            elif self.attack_type == 'SSA':  # Semantic Similarity Attack
+                delta = self.semantic_similarity_attack()
+
+            self.var_p0 = self.var_p0 + delta
 
         if 'x_1' in self.perturbed_input:
             if self.attack_type == 'l2':
                 delta = self.pgd_l2_attack(idx=1)
-                self.var_p1 = self.var_p1 + delta
 
             elif self.attack_type == 'linf':
                 delta = self.pgd_linf_attack(idx=1)
-                self.var_p1 = self.var_p1 + delta
+
+            elif self.attack_type == 'SSA':  # Semantic Similarity Attack
+                delta = self.semantic_similarity_attack(idx=1)
+
+            self.var_p1 = self.var_p1 + delta
 
     def forward_train(self):  # run forward pass
         if self.train_mode == 'adversarial':

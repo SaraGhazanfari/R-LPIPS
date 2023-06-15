@@ -9,7 +9,10 @@ from . import pretrained_networks as pn
 import torch.nn
 
 import lpips
+
 my_device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("mps")
+
+
 def spatial_average(in_tens, keepdim=True):
     return in_tens.mean([2, 3], keepdim=keepdim)
 
@@ -96,7 +99,7 @@ class LPIPS(nn.Module):
                 self.lins += [self.lin5, self.lin6]
             self.lins = nn.ModuleList(self.lins).to(my_device)
 
-            if (pretrained):
+            if pretrained or model_path is not None:
                 if (model_path is None):
                     import inspect
                     import os
@@ -117,7 +120,7 @@ class LPIPS(nn.Module):
 
         # v0.0 - original release had a bug, where input was not scaled
         in0_input, in1_input = (self.scaling_layer(in0), self.scaling_layer(in1)) if self.version == '0.1' else (
-        in0, in1)
+            in0, in1)
         outs0, outs1 = self.net.forward(in0_input), self.net.forward(in1_input)
         feats0, feats1, diffs = {}, {}, {}
 
