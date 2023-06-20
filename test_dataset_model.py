@@ -29,7 +29,7 @@ parser.add_argument('--train_trunk', action='store_true', help='model trunk was 
 parser.add_argument('--version', type=str, default='0.1', help='v0.1 is latest, v0.0 was original release')
 parser.add_argument('--data_path', type=str, help='path of data')
 parser.add_argument('--test_mode', type=str, help='natural or adversarial', default='natural')
-parser.add_argument('--perturbed_input', type=str, help='x_0, x_1 or x_0/x_1', default=None)
+parser.add_argument('--perturbed_input', type=str, help='x_0, x_1, x_0/x_1, ref', default=None)
 parser.add_argument('--attack_type', type=str, help='linf, l2', default=None)
 
 if __name__ == '__main__':

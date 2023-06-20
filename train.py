@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_plot', action='store_true', help='plot saving')
     parser.add_argument('--data_path', type=str, help='path of data')
     parser.add_argument('--train_mode', type=str, help='natural or adversarial training', default='natural')
-    parser.add_argument('--perturbed_input', type=str, help='x_0, x_1 or x_0/x_1', default=None)
+    parser.add_argument('--perturbed_input', type=str, help='x_0, x_1, x_0/x_1 or ref', default=None)
     parser.add_argument('--attack_type', type=str, help='linf, l2', default=None)
     parser.add_argument('--model_path', type=str, help='model path', default=None)
 
