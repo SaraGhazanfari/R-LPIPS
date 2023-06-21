@@ -115,6 +115,8 @@ if __name__ == '__main__':
     parser.add_argument('--second_model_path', type=str, help='second model path', default=None)
     parser.add_argument('--target_model_idx', type=int, help='idx of the target model to generate attack against',
                         default=None)
+    parser.add_argument('--hist_path', type=str, help='destination path for the histogram',
+                        default='hist.pdf')
 
     args = parser.parse_args()
 
@@ -147,4 +149,4 @@ if __name__ == '__main__':
             show_image=False,
             threshold=0)
 
-    plot_histogram(lpips_list, r_lpips_list, save_path='hist.pdf')
+    plot_histogram(lpips_list, r_lpips_list, save_path=args.hist_path)

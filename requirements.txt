@@ -10,4 +10,5 @@ tqdm>=4.28.1
 jupyter
 jax
 jaxlib
+#for cuda enabled version: pip install --upgrade "jax[cuda11_local]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 seaborn
