@@ -10,3 +10,4 @@ tqdm>=4.28.1
 jupyter
 jax
 jaxlib
+seaborn
