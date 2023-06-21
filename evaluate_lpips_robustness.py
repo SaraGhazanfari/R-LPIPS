@@ -4,7 +4,7 @@ import jax
 import torch
 import torchvision
 
-from advertorch.attacks import LinfPGDAttack
+from advertorch.attacks import LinfPGDAttack, L2PGDAttack
 from lpips.modular_lpips import AlexNetFeatureModel, LPIPS_Metric
 from util.imagenet_dataset import get_dataset
 import time
@@ -38,12 +38,18 @@ def calculate_distance(x: torch.tensor, x_prime: torch.tensor, lpips_metric: LPI
 
 
 def generate_lp_attack_against_LPIPS_model(lpips_metric, first_feature_model: AlexNetFeatureModel,
-                                           second_feature_model: AlexNetFeatureModel,
-                                           target_model: AlexNetFeatureModel, show_image=False, threshold=0):
-    adversary = LinfPGDAttack(
-        target_model, loss_fn=MyMSELoss(), eps=0.05,
-        nb_iter=50, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
-        targeted=False)
+                                           second_feature_model: AlexNetFeatureModel, target_model: AlexNetFeatureModel,
+                                           show_image=False, threshold=0, p=2):
+    if p == 2:
+        adversary = L2PGDAttack(
+            target_model, loss_fn=MyMSELoss(), eps=1.0,
+            nb_iter=50, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
+            targeted=False)
+    else:
+        adversary = LinfPGDAttack(
+            target_model, loss_fn=MyMSELoss(), eps=0.05,
+            nb_iter=50, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
+            targeted=False)
 
     lpips_list, r_lpips_list, linf_list, l2_list = [], [], [], []
 
@@ -127,26 +133,24 @@ if __name__ == '__main__':
     lpips_metric = LPIPS_Metric().eval()
     first_feature_model = AlexNetFeatureModel(path=args.first_model_path).eval()
     second_feature_model = AlexNetFeatureModel(path=args.second_model_path).eval()
-
+    p = 2 if args.attack_type == 'l2' else float('inf')
     if args.attack_type == 'aug':
         lpips_list, r_lpips_list, linf_list, l2_list = generate_semantic_attack_against_LPIPS_model_using_byol(
             lpips_metric, first_feature_model, second_feature_model)
+        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 800, 50, 1.2, 0.2
     elif args.target_model_idx == 1:
         lpips_list, r_lpips_list, linf_list, l2_list = generate_lp_attack_against_LPIPS_model(
-            lpips_metric=lpips_metric,
-            second_feature_model=second_feature_model,
-            first_feature_model=first_feature_model,
-            target_model=first_feature_model,
-            show_image=False,
-            threshold=0)
+            lpips_metric=lpips_metric, second_feature_model=second_feature_model,
+            first_feature_model=first_feature_model, target_model=first_feature_model, show_image=False, threshold=0,
+            p=p)
+        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 250, 20, 1.8, 0.2
 
     else:  # args.target_model_idx == 2
         lpips_list, r_lpips_list, linf_list, l2_list = generate_lp_attack_against_LPIPS_model(
-            lpips_metric=lpips_metric,
-            second_feature_model=second_feature_model,
-            first_feature_model=first_feature_model,
-            target_model=second_feature_model,
-            show_image=False,
-            threshold=0)
+            lpips_metric=lpips_metric, second_feature_model=second_feature_model,
+            first_feature_model=first_feature_model, target_model=second_feature_model, show_image=False, threshold=0,
+            p=p)
+        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 250, 20, 1.8, 0.2
 
-    plot_histogram(lpips_list, r_lpips_list, save_path=args.hist_path)
+    plot_histogram(lpips_list, r_lpips_list, save_path=args.hist_path, y_bins_max=y_bins_max, y_bins_slot=y_bins_slot,
+                   x_bins_max=x_bins_max, x_bins_slot=x_bins_slot)

@@ -3,9 +3,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def plot_histogram(lpips_list, r_lpips_list, save_path, y_bins_max=250, y_bins_slot=20):
+def plot_histogram(lpips_list, r_lpips_list, save_path, y_bins_max=250, y_bins_slot=20, x_bins_max=1.8,
+                   x_bins_slot=0.2):
     sns.set(style="darkgrid")
-    bins = np.arange(0, 1.8, 0.2)
+    bins = np.arange(0, x_bins_max, x_bins_slot)
     ybins = np.arange(0, y_bins_max, y_bins_slot)
     # Creating histogram
     plt.rcParams['font.size'] = 2
@@ -20,7 +21,7 @@ def plot_histogram(lpips_list, r_lpips_list, save_path, y_bins_max=250, y_bins_s
     plt.tick_params(axis='both', which='major', labelsize=20)
     ax.set_xticks(bins)
     ax.set_yticks(ybins)
-    ax.set(xlim=(0, 1.6), ylim=(0, y_bins_max))
+    ax.set(xlim=(0, x_bins_max), ylim=(0, y_bins_max))
     plt.savefig(save_path, format="pdf", dpi=300)
     plt.show()
 
