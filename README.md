@@ -58,3 +58,10 @@ The --first_model_path and --second_model_path are the trained LPIPS models, i.e
 and R-LPIPS (tune) that we want to compare their robustness.
 the --target_model_idx is the model that we want to perform attack on. It can be any of the first or second model.
 
+The trained model for different versions of R-LPIPS is included in the checkpoints directory of the project:
+* latest_net_linf.pth: Adversarially trained LPIPS with Linf over x_0
+* latest_net_linf_x1.pth: Adversarially trained LPIPS with Linf over x_1
+* latest_net_linf_ref.pth: Adversarially trained LPIPS with Linf over reference image (x)
+* latest_net_linf_x0_x1.pth: Adversarially trained LPIPS with Linf over x_0 and x_1
+* latest_net_linf_x0_tune.pth: Adversarially trained LPIPS in tune mode with Linf over x_0
+* latest_net_SSA_x0_tune.pth: Adversarially trained LPIPS with Semantic Similarity Attack (SSA) over x_0
