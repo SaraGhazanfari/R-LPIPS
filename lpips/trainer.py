@@ -9,7 +9,7 @@ from tqdm import tqdm
 import lpips
 import os
 
-my_device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
 
 
 class Trainer():
@@ -39,7 +39,7 @@ class Trainer():
         '''
 
         self.use_gpu = use_gpu
-        self.gpu_ids = [my_device]
+        self.gpu_ids = [DEVICE]
         self.model = model
         self.net = net
         self.is_train = is_train
@@ -95,7 +95,7 @@ class Trainer():
         OUTPUT
             computed distances between in0 and in1
         '''
-        return self.net.forward(in0.to(my_device), in1.to(my_device), retPerLayer=retPerLayer)
+        return self.net.forward(in0.to(DEVICE), in1.to(DEVICE), retPerLayer=retPerLayer)
 
     # ***** TRAINING FUNCTIONS *****
     def optimize_parameters(self):
@@ -127,7 +127,7 @@ class Trainer():
         self.var_p1 = Variable(self.input_p1, requires_grad=True)
 
     def pgd_linf_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
-        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
         for t in range(num_iter):
             if idx == 0:
                 d0 = self.forward(self.var_ref, self.var_p0 + delta)
@@ -149,7 +149,7 @@ class Trainer():
 
     def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=1.0, idx=0):
         batch_size = self.var_p0.shape[0]
-        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
         for t in range(num_iter):
             if idx == 0:
                 d0 = self.forward(self.var_ref, self.var_p0 + delta)
@@ -174,10 +174,10 @@ class Trainer():
         return delta.detach()
 
     def semantic_similarity_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
-        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(my_device)
+        delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
 
         for t in range(num_iter):
-            sim_ij = torch.zeros((self.var_p0.shape[0], self.var_p0.shape[0]), device=my_device)
+            sim_ij = torch.zeros((self.var_p0.shape[0], self.var_p0.shape[0]), device=DEVICE)
             if idx == 0:
                 sim_ii = self.net.forward(self.var_p0 + delta, self.var_ref)
                 for sample_idx in range(self.var_p0.shape[0]):
@@ -190,7 +190,7 @@ class Trainer():
                     sim_ij[sample_idx, sample_idx] = 0
 
             loss_total = torch.mean(torch.max(torch.max(sim_ij, dim=1).values - sim_ii.reshape(-1),
-                                              torch.zeros(self.var_p0.shape[0], device=my_device)))
+                                              torch.zeros(self.var_p0.shape[0], device=DEVICE)))
             loss_total.backward()
             delta.data = (delta - alpha * delta.grad.detach().sign()).clamp(-epsilon, epsilon)
             delta.grad.zero_()

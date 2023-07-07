@@ -10,7 +10,7 @@ import torch.nn
 
 import lpips
 
-my_device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("mps")
 
 
 def spatial_average(in_tens, keepdim=True):
@@ -84,7 +84,7 @@ class LPIPS(nn.Module):
             self.chns = [64, 128, 256, 384, 384, 512, 512]
         self.L = len(self.chns)
 
-        self.net = net_type(pretrained=not self.pnet_rand, requires_grad=self.pnet_tune).to(my_device)
+        self.net = net_type(pretrained=not self.pnet_rand, requires_grad=self.pnet_tune).to(DEVICE)
 
         if (lpips):
             self.lin0 = NetLinLayer(self.chns[0], use_dropout=use_dropout)
@@ -97,7 +97,7 @@ class LPIPS(nn.Module):
                 self.lin5 = NetLinLayer(self.chns[5], use_dropout=use_dropout)
                 self.lin6 = NetLinLayer(self.chns[6], use_dropout=use_dropout)
                 self.lins += [self.lin5, self.lin6]
-            self.lins = nn.ModuleList(self.lins).to(my_device)
+            self.lins = nn.ModuleList(self.lins).to(DEVICE)
 
             if pretrained or model_path is not None:
                 if (model_path is None):
@@ -109,6 +109,10 @@ class LPIPS(nn.Module):
                 if (verbose):
                     print('Loading model from: %s' % model_path)
                 self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)
+
+        print('{lin0} & {lin1} & {lin2} & {lin3} & {lin4}'.format(lin0=torch.norm(self.lin0.model[1].weight, p=2).item(), lin1=torch.norm(self.lin1.model[1].weight, p=2).item(),
+              lin2=torch.norm(self.lin2.model[1].weight, p=2).item(), lin3=torch.norm(self.lin3.model[1].weight, p=2).item(),
+              lin4=torch.norm(self.lin4.model[1].weight, p=2).item()))
 
         if (eval_mode):
             self.eval()
@@ -152,8 +156,8 @@ class LPIPS(nn.Module):
 class ScalingLayer(nn.Module):
     def __init__(self):
         super(ScalingLayer, self).__init__()
-        self.shift = torch.tensor([-.030, -.088, -.188], device=my_device).reshape(1, -1, 1, 1)
-        self.scale = torch.tensor([.458, .448, .450], device=my_device).reshape(1, -1, 1, 1)
+        self.shift = torch.tensor([-.030, -.088, -.188], device=DEVICE).reshape(1, -1, 1, 1)
+        self.scale = torch.tensor([.458, .448, .450], device=DEVICE).reshape(1, -1, 1, 1)
 
     def forward(self, inp):
         return (inp - self.shift) / self.scale
@@ -186,7 +190,7 @@ class Dist2LogitLayer(nn.Module):
         layers += [nn.Conv2d(chn_mid, 1, 1, stride=1, padding=0, bias=True), ]
         if (use_sigmoid):
             layers += [nn.Sigmoid(), ]
-        self.model = nn.Sequential(*layers).to(my_device)
+        self.model = nn.Sequential(*layers).to(DEVICE)
 
     def forward(self, d0, d1, eps=0.1):
         return self.model.forward(torch.cat((d0, d1, d0 - d1, d0 / (d1 + eps), d1 / (d0 + eps)), dim=1))
@@ -195,7 +199,7 @@ class Dist2LogitLayer(nn.Module):
 class BCERankingLoss(nn.Module):
     def __init__(self, chn_mid=32):
         super(BCERankingLoss, self).__init__()
-        self.net = Dist2LogitLayer(chn_mid=chn_mid).to(my_device)
+        self.net = Dist2LogitLayer(chn_mid=chn_mid).to(DEVICE)
         # self.parameters = list(self.net.parameters())
         self.loss = torch.nn.BCELoss()
 
@@ -228,7 +232,7 @@ class L2(FakeNet):
                 'float')
             ret_var = Variable(torch.Tensor((value,)))
             if (self.use_gpu):
-                ret_var = ret_var.to(my_device)
+                ret_var = ret_var.to(DEVICE)
             return ret_var
 
 
@@ -246,7 +250,7 @@ class DSSIM(FakeNet):
                 'float')
         ret_var = Variable(torch.Tensor((value,)))
         if (self.use_gpu):
-            ret_var = ret_var.to(my_device)
+            ret_var = ret_var.to(DEVICE)
         return ret_var
 
 

@@ -114,3 +114,39 @@ class LPIPS_Metric(nn.Module):
         for i in range(len(res)):
             res_sum += res[i]
         return res_sum.detach()
+
+
+class ContrastiveLoss(nn.Module):
+
+    def __init__(self, chn_mid=32):
+        super(ContrastiveLoss, self).__init__()
+
+    def forward(self, ref_feature, ref_feature_plus_delta, p0_feature, p1_feature, judge):
+        batch_size = ref_feature[0].shape[0]
+        judge = judge.reshape(batch_size)
+        ref_similarity_matrix_exp, ref_and_ref_plus_delta_similarity_matrix_exp, ref_and_p0_similarity_matrix_exp, \
+            ref_and_p1_similarity_matrix_exp = torch.zeros((batch_size, batch_size), device=DEVICE), torch.zeros(
+            batch_size, device=DEVICE), torch.zeros(batch_size, device=DEVICE), torch.zeros(batch_size, device=DEVICE)
+        for idx in range(5):
+            I_mat = torch.eye(batch_size, batch_size, device=DEVICE)
+
+            ref_similarity_matrix_exp += torch.mm(ref_feature[idx].reshape(batch_size, -1),
+                                                  ref_feature[idx].reshape(-1, batch_size).detach()) * (
+                                                 1 - I_mat)
+            ref_and_ref_plus_delta_similarity_matrix_exp += \
+                torch.diagonal(torch.mm(ref_feature[idx].reshape(batch_size, -1),
+                                        ref_feature_plus_delta[idx].reshape(-1, batch_size)))
+
+            ref_and_p0_similarity_matrix_exp += torch.diagonal(torch.mm(ref_feature[idx].reshape(batch_size, -1),
+                                                                        p0_feature[idx].reshape(-1,
+                                                                                                batch_size)))
+
+            ref_and_p1_similarity_matrix_exp += torch.diagonal(torch.mm(ref_feature[idx].reshape(batch_size, -1),
+                                                                        p1_feature[idx].reshape(-1,
+                                                                                                batch_size)))
+
+        positive_loss = ref_and_ref_plus_delta_similarity_matrix_exp + \
+                        (1 - judge) * ref_and_p0_similarity_matrix_exp + judge * ref_and_p1_similarity_matrix_exp
+
+        sample_loss = -torch.log(positive_loss / torch.sum(positive_loss + ref_similarity_matrix_exp, dim=1))
+        return torch.mean(sample_loss)

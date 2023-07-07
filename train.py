@@ -8,6 +8,7 @@ import lpips
 from data import data_loader as dl
 import argparse
 from util.visualizer import Visualizer
+from lpips.constrastive_trainer import ConstrastiveTrainer
 
 if __name__ == '__main__':
 
@@ -43,7 +44,8 @@ if __name__ == '__main__':
     parser.add_argument('--train_trunk', action='store_true', help='model trunk was trained/tuned')
     parser.add_argument('--train_plot', action='store_true', help='plot saving')
     parser.add_argument('--data_path', type=str, help='path of data')
-    parser.add_argument('--train_mode', type=str, help='natural or adversarial training', default='natural')
+    parser.add_argument('--train_mode', type=str, help='natural, contrastive or adversarial training',
+                        default='natural')
     parser.add_argument('--perturbed_input', type=str, help='x_0, x_1, x_0/x_1 or ref', default=None)
     parser.add_argument('--attack_type', type=str, help='linf, l2', default=None)
     parser.add_argument('--model_path', type=str, help='model path', default=None)
@@ -52,12 +54,17 @@ if __name__ == '__main__':
     opt.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
     if not os.path.exists(opt.save_dir):
         os.makedirs(opt.save_dir)
-
-    # initialize model
-    trainer = lpips.Trainer(model=opt.model, net=opt.net, use_gpu=opt.use_gpu, is_train=True,
-                            pnet_rand=opt.from_scratch, pnet_tune=opt.train_trunk, gpu_ids=opt.gpu_ids,
-                            train_mode=opt.train_mode, perturbed_input=opt.perturbed_input, attack_type=opt.attack_type,
-                            model_path=opt.model_path)
+    if opt.train_mode == 'contrastive':
+        trainer = ConstrastiveTrainer(use_gpu=opt.use_gpu, is_train=True, train_mode=opt.train_mode,
+                                      perturbed_input=opt.perturbed_input,
+                                      attack_type=opt.attack_type,
+                                      model_path=opt.model_path)
+    else:
+        trainer = lpips.Trainer(model=opt.model, net=opt.net, use_gpu=opt.use_gpu, is_train=True,
+                                pnet_rand=opt.from_scratch, pnet_tune=opt.train_trunk, gpu_ids=opt.gpu_ids,
+                                train_mode=opt.train_mode, perturbed_input=opt.perturbed_input,
+                                attack_type=opt.attack_type,
+                                model_path=opt.model_path)
 
     # load data from all training sets
     data_loader = dl.CreateDataLoader(opt.datasets, data_root=opt.data_path, dataset_mode='2afc',
@@ -81,8 +88,8 @@ if __name__ == '__main__':
             trainer.set_input(data)
             trainer.optimize_parameters()
 
-            if total_steps % opt.display_freq == 0:
-                visualizer.display_current_results(trainer.get_current_visuals(), epoch)
+            # if total_steps % opt.display_freq == 0:
+            #     visualizer.display_current_results(trainer.get_current_visuals(), epoch)
 
             if total_steps % opt.print_freq == 0:
                 errors = trainer.get_current_errors()

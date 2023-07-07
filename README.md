@@ -8,7 +8,7 @@ proposed in:
 The Unreasonable Effectiveness of Deep Features as a Perceptual Metric
 Richard Zhang, Phillip Isola, Alexei A. Efros, Eli Shechtman, Oliver Wang. In CVPR, 2018.
 
-To adversarially train the model and learn the last linear layer:
+To adversarially train the model and fine-tune the last linear layer:
 
 ```
 python train.py --use_gpu --net alex --name alexnet_adv_linf_x0 --train_mode adversarial --perturbed_input x_0 \
@@ -16,7 +16,7 @@ python train.py --use_gpu --net alex --name alexnet_adv_linf_x0 --train_mode adv
 
 ```
 
-To adversarially train the model, learn the last linear layer and finetune alexnet weights:
+To adversarially train the model and finetune the alexnet weights as well as the last linear layer:
 
 ```
 python train.py --train_trunk --use_gpu --net alex --name alexnet_adv_linf_x0_tune --train_mode adversarial 
@@ -30,7 +30,7 @@ and <a href="https://openaccess.thecvf.com/content/CVPR2022/papers/Luo_Frequency
 Semantic Similarity Attack</a>.
 For --perturbed_input three options are available "x_0" or "x_1" or "x_0/x_1".
 
-To test the robustness of trained model to adversarial data we have provided two options:
+To test the robustness of the trained model to adversarial data we have provided two options:
 1- Calculating the accuracy of the model on the perturbed test data:
 
 ```
@@ -43,9 +43,9 @@ For test_mode, both "natural" and "adversarial" are available.
 For --attack_type two options can be used "linf" and "l2".
 For --perturbed_input three options are available "x_0" or "x_1" or "x_0/x_1".
 
-2- Loading the trained model and checking its robustness on imagenet-100 validation dataset while generating differenet
-attacks. In this part we can load two different versions of LPIPS and compare their robustness to
-three attacks mentioned below.
+2- Loading the trained model and checking its robustness on imagenet-100 validation dataset while 
+generating different attacks. In this part we can load two different versions of LPIPS 
+and compare their robustness to three attacks suggested below.
 
 ```
 python evaluate_lpips_robustness.py --data_path path/to/imagenet-100 --attack_type 
