@@ -124,7 +124,7 @@ class AutoAttack():
             if state.robust_flags is None:
                 robust_flags = torch.zeros(x_0_orig.shape[0], dtype=torch.bool, device=x_0_orig.device)
                 y_orig = y_orig.reshape(-1)
-                y_adv = torch.empty_like(y_orig.long())
+                y_adv = torch.empty_like(y_orig)
                 for batch_idx in range(n_batches):
                     start_idx = batch_idx * bs
                     end_idx = min((batch_idx + 1) * bs, x_0_orig.shape[0])
@@ -135,8 +135,9 @@ class AutoAttack():
 
                     y = y_orig[start_idx:end_idx].clone().to(self.device)
                     output = self.get_logits(x_0, x_1, x_ref)
-                    y_adv[start_idx: end_idx] = output.max(1)[1]
-                    correct_batch = y.eq(output.max(1)[1]) #~ ((y_adv > 0.5) ^ (y > 0.5))
+
+                    y_adv[start_idx: end_idx] = output.round()
+                    correct_batch = y.eq(output.round()) #~ ((y_adv > 0.5) ^ (y > 0.5))
                     robust_flags[start_idx:end_idx] = correct_batch.detach().to(robust_flags.device)
 
                 state.robust_flags = robust_flags
@@ -180,7 +181,7 @@ class AutoAttack():
                     x_0 = x_0_orig[batch_datapoint_idcs, :].clone().to(self.device)
                     x_1 = x_1_orig[batch_datapoint_idcs, :].clone().to(self.device)
                     x_ref = x_ref_orig[batch_datapoint_idcs, :].clone().to(self.device)
-                    y = y_orig[batch_datapoint_idcs].long().clone().to(self.device)
+                    y = y_orig[batch_datapoint_idcs].clone().to(self.device)
 
                     # make sure that x is a 4d tensor even if there is only a single datapoint left
                     if len(x_0.shape) == 3:
@@ -226,13 +227,13 @@ class AutoAttack():
                         raise ValueError('Attack not supported')
 
                     output = self.get_logits(adv_curr, x_1, x_ref)
-                    false_batch = ~y.eq(output.max(1)[1]).to(robust_flags.device)
+                    false_batch = ~y.eq(output.round()).to(robust_flags.device)
                     non_robust_lin_idcs = batch_datapoint_idcs[false_batch]
                     robust_flags[non_robust_lin_idcs] = False
                     state.robust_flags = robust_flags
 
                     x_adv[non_robust_lin_idcs] = adv_curr[false_batch].detach().to(x_adv.device)
-                    y_adv[non_robust_lin_idcs] = output[false_batch].max(1)[1].detach().to(x_adv.device)
+                    y_adv[non_robust_lin_idcs] = output[false_batch].round().detach().to(x_adv.device)
 
                     if self.verbose:
                         num_non_robust_batch = torch.sum(false_batch)
@@ -275,7 +276,7 @@ class AutoAttack():
             x_ref = x_ref[counter * bs:min((counter + 1) * bs, x_ref.shape[0])].clone().to(self.device)
             y = y_orig[counter * bs:min((counter + 1) * bs, x_0.shape[0])].clone().to(self.device)
             output = self.get_logits(x_0, x_1, x_ref)
-            acc += (output.max(1)[1] == y).float().sum()
+            acc += (output.round() == y).float().sum()
 
         if self.verbose:
             print('clean accuracy: {:.2%}'.format(acc / x_0.shape[0]))
@@ -313,7 +314,7 @@ class AutoAttack():
             print('setting parameters for {} version'.format(version))
 
         if version == 'standard':
-            self.attacks_to_run = ['apgd-ce']#, 'apgd-t', 'fab-t', 'square']
+            self.attacks_to_run = ['apgd-ce'] #, 'apgd-t', 'fab-t', 'square']
             if self.norm in ['Linf', 'L2']:
                 self.apgd.n_restarts = 1
                 self.apgd_targeted.n_target_classes = 9

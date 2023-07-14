@@ -269,7 +269,7 @@ class Trainer():
         d1 = self.forward(ref, p1)
         #logits = torch.cat((d1, d0), 1).reshape(-1, 2)
         logits = lpips.Dist2LogitLayer().to(DEVICE).forward(d0, d1)
-        return logits
+        return logits.reshape(-1)
 
     def get_logits(self, p0, p1, ref, y):  # run forward pass
         if p0.shape[0] == p1.shape[0]:

@@ -267,7 +267,7 @@ class FABAttack():
             self.device = x_0.device
         adv = x_0.clone()
         with torch.no_grad():
-            acc = self._predict_fn(x_0).max(1)[1] == y
+            acc = self._predict_fn(x_0).round() == y
 
             startt = time.time()
 
@@ -284,7 +284,7 @@ class FABAttack():
                         adv_curr = self.attack_single_run(x_to_fool, x_1_to_fool, x_ref_to_fool, y_to_fool,
                                                           use_rand_start=(counter > 0), is_targeted=False)
 
-                        acc_curr = self._predict_fn(adv_curr).max(1)[1] == y_to_fool
+                        acc_curr = self._predict_fn(adv_curr).round() == y_to_fool
                         if self.norm == 'Linf':
                             res = (x_to_fool - adv_curr).abs().reshape(x_to_fool.shape[0], -1).max(1)[0]
                         elif self.norm == 'L2':
@@ -314,7 +314,7 @@ class FABAttack():
                                                               use_rand_start=(counter > 0),
                                                               is_targeted=True)
 
-                            acc_curr = self._predict_fn(adv_curr).max(1)[1] == y_to_fool
+                            acc_curr = self._predict_fn(adv_curr).round() == y_to_fool
                             if self.norm == 'Linf':
                                 res = (x_to_fool - adv_curr).abs().reshape(x_to_fool.shape[0], -1).max(1)[0]
                             elif self.norm == 'L2':

@@ -231,7 +231,7 @@ class APGDAttack():
 
         if not self.is_tf_model:
             if self.loss == 'ce':
-                criterion_indiv = nn.CrossEntropyLoss(reduction='none')
+                criterion_indiv = nn.BCELoss(reduction='none')
             elif self.loss == 'ce-targeted-cfts':
                 criterion_indiv = lambda x, y: -1. * F.cross_entropy(x, y,
                                                                      reduction='none')
@@ -278,7 +278,7 @@ class APGDAttack():
             # check if there are zero gradients
             check_zero_gradients(grad, logger=self.logger)
 
-        acc = logits.max(1)[1] == y
+        acc = logits.round() == y
         acc_steps[0] = acc + 0
         loss_best = loss_indiv.detach().clone()
 
@@ -370,7 +370,7 @@ class APGDAttack():
 
             grad /= float(self.eot_iter)
 
-            pred = logits.max(1)[1] == y
+            pred = logits.round() == y
             acc = torch.min(acc, pred)
             acc_steps[i + 1] = acc + 0
             ind_pred = (pred == 0).nonzero().squeeze()
@@ -456,16 +456,16 @@ class APGDAttack():
         else:
             y_pred = self.model.predict(x_0, x_1, x_ref)
         if y is None:
-            # y_pred = self.predict(x).max(1)[1]
+            # y_pred = self.predict(x).round()
             y = y_pred.detach().clone().long().to(self.device)
         else:
             y = y.detach().clone().to(self.device)
 
         adv = x_0.clone()
         if self.loss != 'ce-targeted':
-            acc = y_pred.max(1)[1] == y
+            acc = y_pred.round() == y
         else:
-            acc = y_pred.max(1)[1] == y
+            acc = y_pred.round() == y
         loss = -1e10 * torch.ones_like(acc).float()
         if self.verbose:
             print('-------------------------- ',
@@ -623,7 +623,7 @@ class APGDAttack_targeted(APGDAttack):
             y = y.detach().clone().long().to(self.device)
 
         adv = x_0.clone()
-        acc = y_pred.max(1)[1] == y
+        acc = y_pred.round() == y
         if self.verbose:
             print('-------------------------- ',
                   'running {}-attack with epsilon {:.5f}'.format(

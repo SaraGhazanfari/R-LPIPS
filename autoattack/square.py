@@ -563,21 +563,21 @@ class SquareAttack():
             if not self.targeted:
                 with torch.no_grad():
                     output = self.predict(x_0)
-                    y_pred = output.max(1)[1]
+                    y_pred = output.round()
                     y = y_pred.detach().clone().long().to(self.device)
             else:
                 with torch.no_grad():
                     output = self.predict(x_0)
                     n_classes = output.shape[-1]
-                    y_pred = output.max(1)[1]
+                    y_pred = output.round()
                     y = self.random_target_classes(y_pred, n_classes)
         else:
             y = y.detach().clone().long().to(self.device)
 
         if not self.targeted:
-            acc = self.predict(x_0, x_1, x_ref).max(1)[1] == y
+            acc = self.predict(x_0, x_1, x_ref).round() == y
         else:
-            acc = self.predict(x_0, x_1, x_ref, y).max(1)[1] != y
+            acc = self.predict(x_0, x_1, x_ref, y).round() != y
 
         startt = time.time()
 
@@ -598,9 +598,9 @@ class SquareAttack():
 
                 output_curr = self.predict(adv_curr)
                 if not self.targeted:
-                    acc_curr = output_curr.max(1)[1] == y_to_fool
+                    acc_curr = output_curr.round() == y_to_fool
                 else:
-                    acc_curr = output_curr.max(1)[1] != y_to_fool
+                    acc_curr = output_curr.round() != y_to_fool
                 ind_curr = (acc_curr == 0).nonzero().squeeze()
 
                 acc[ind_to_fool[ind_curr]] = 0
