@@ -14,7 +14,9 @@ import torch.nn as nn
 from torch import Tensor
 import numpy as np
 
-DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('mps:0')
+DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+L2_EPSILON = 1.0
+Linf_EPSILON = 0.05
 
 
 class MyMSELoss(nn.MSELoss):
@@ -42,12 +44,12 @@ def generate_lp_attack_against_LPIPS_model(lpips_metric, first_feature_model: Al
                                            show_image=False, threshold=0, p=2):
     if p == 2:
         adversary = L2PGDAttack(
-            target_model, loss_fn=MyMSELoss(), eps=1.0,
+            target_model, loss_fn=MyMSELoss(), eps=L2_EPSILON,
             nb_iter=50, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
             targeted=False)
     else:
         adversary = LinfPGDAttack(
-            target_model, loss_fn=MyMSELoss(), eps=0.05,
+            target_model, loss_fn=MyMSELoss(), eps=Linf_EPSILON,
             nb_iter=50, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
             targeted=False)
 
@@ -133,7 +135,9 @@ if __name__ == '__main__':
     lpips_metric = LPIPS_Metric().eval()
     first_feature_model = AlexNetFeatureModel(path=args.first_model_path).eval()
     second_feature_model = AlexNetFeatureModel(path=args.second_model_path).eval()
-    p = 2 if args.attack_type == 'l2' else float('inf')
+
+    p = 2 if 'l2' in args.attack_type else float('inf')
+
     if args.attack_type == 'aug':
         lpips_list, r_lpips_list, linf_list, l2_list = generate_semantic_attack_against_LPIPS_model_using_byol(
             lpips_metric, first_feature_model, second_feature_model)

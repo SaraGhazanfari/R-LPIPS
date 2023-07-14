@@ -110,10 +110,6 @@ class LPIPS(nn.Module):
                     print('Loading model from: %s' % model_path)
                 self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)
 
-        print('{lin0} & {lin1} & {lin2} & {lin3} & {lin4}'.format(lin0=torch.norm(self.lin0.model[1].weight, p=2).item(), lin1=torch.norm(self.lin1.model[1].weight, p=2).item(),
-              lin2=torch.norm(self.lin2.model[1].weight, p=2).item(), lin3=torch.norm(self.lin3.model[1].weight, p=2).item(),
-              lin4=torch.norm(self.lin4.model[1].weight, p=2).item()))
-
         if (eval_mode):
             self.eval()
 

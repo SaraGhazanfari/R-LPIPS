@@ -7,7 +7,7 @@ import os
 
 from lpips.modular_lpips import LPIPS_Metric, AlexNetFeatureModel, ContrastiveLoss
 
-DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
 
 class ConstrastiveTrainer:
