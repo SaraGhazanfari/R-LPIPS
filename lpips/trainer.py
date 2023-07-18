@@ -8,7 +8,6 @@ from scipy.ndimage import zoom
 from tqdm import tqdm
 import lpips
 import os
-from autoattack import AutoAttack
 
 DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
 
@@ -174,27 +173,6 @@ class Trainer():
 
         return delta.detach()
 
-    def auto_attack(self, idx, norm, epsilon=8 / 255):
-        batch_size = self.var_p0.shape[0]
-        adversary = AutoAttack(self.old_get_logits, norm=norm, eps=epsilon, version='standard', device=DEVICE)
-        adv_x = adversary.run_standard_evaluation(x_0_orig=self.var_p0, x_1_orig=self.var_p1, x_ref_orig=self.var_ref,
-                                                  y_orig=self.input_judge.reshape(-1), bs=batch_size)
-        return adv_x - self.var_p0
-
-        # if idx == 0:
-        #     adversary = AutoAttack(self.new_classifier(self.var_p1, self.var_ref, self.input_judge.reshape(-1)),
-        #                            norm=norm, eps=epsilon, version='standard', device=DEVICE)
-        #     adv_x = adversary.run_standard_evaluation(self.var_p0, self.input_judge.reshape(-1),
-        #                                               batch_size)
-        #     return adv_x - self.var_p0
-        # elif idx == 1:
-        #     adversary = AutoAttack(self.new_classifier(self.var_p0, self.var_ref, self.input_judge.reshape(-1)),
-        #                            norm=norm, eps=epsilon, version='standard', device=DEVICE)
-        #     adv_x = adversary.run_standard_evaluation(self.var_p1, self.input_judge.reshape(-1),
-        #                                               batch_size)
-        #
-        #     return adv_x - self.var_p1
-
     def semantic_similarity_attack(self, num_iter=50, alpha=1e4, epsilon=8 / 255, idx=0):
         delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
 
@@ -241,12 +219,6 @@ class Trainer():
         elif self.attack_type == 'SSA':  # Semantic Similarity Attack
             delta = self.semantic_similarity_attack(idx=idx)
 
-        elif self.attack_type == 'auto-attack-linf':
-            delta = self.auto_attack(idx=idx, norm='Linf', epsilon=8 / 255)
-
-        elif self.attack_type == 'auto-attack-l2':
-            delta = self.auto_attack(idx=idx, norm='L2', epsilon=1.0)
-
         return delta
 
     def forward_train(self):  # run forward pass
@@ -262,58 +234,6 @@ class Trainer():
         self.loss_total = self.rankLoss.forward(self.d0, self.d1, self.var_judge * 2. - 1.)
 
         return self.loss_total
-
-    def old_get_logits(self, p0, p1, ref):  # run forward pass
-
-        d0 = self.forward(ref, p0)
-        d1 = self.forward(ref, p1)
-        #logits = torch.cat((d1, d0), 1).reshape(-1, 2)
-        logits = lpips.Dist2LogitLayer().to(DEVICE).forward(d0, d1)
-        return logits.reshape(-1)
-
-    def get_logits(self, p0, p1, ref, y):  # run forward pass
-        if p0.shape[0] == p1.shape[0]:
-            d0 = self.forward(ref, p0)
-            d1 = self.forward(ref, p1)
-            logits = lpips.Dist2LogitLayer().to(DEVICE).forward(d0, d1)
-            logits = logits.reshape(-1)
-            logits_multi_class_form = torch.zeros((logits.shape[0], 2))
-            logits_multi_class_form[:, 1] = logits
-            logits_multi_class_form[:, 0] = 1 - logits
-
-            output = logits_multi_class_form.max(dim=1)[1]
-            correct_batch = y.eq(output)
-            self.robust_idx = torch.nonzero(correct_batch, as_tuple=False).reshape(-1)
-        elif self.robust_idx.shape[0] == p0.shape[0]:
-            d0 = self.forward(ref[self.robust_idx], p0)
-            d1 = self.forward(ref[self.robust_idx], p1[self.robust_idx])
-            logits = lpips.Dist2LogitLayer().to(DEVICE).forward(d0, d1)
-            logits = logits.reshape(-1)
-            logits_multi_class_form = torch.zeros((logits.shape[0], 2))
-            logits_multi_class_form[:, 1] = logits
-            logits_multi_class_form[:, 0] = 1 - logits
-            output = logits_multi_class_form.max(dim=1)[1]
-            uncorrect_batch = y[self.robust_idx].eq(output)
-            self.non_robust_idx = torch.nonzero(uncorrect_batch, as_tuple=False).reshape(-1)
-
-        elif self.non_robust_idx.shape[0] == p0.shape[0]:
-            d0 = self.forward(ref[self.robust_idx][self.non_robust_idx], p0)
-            d1 = self.forward(ref[self.robust_idx][self.non_robust_idx], p1[self.robust_idx][self.non_robust_idx])
-            logits = lpips.Dist2LogitLayer().to(DEVICE).forward(d0, d1)
-            logits = logits.reshape(-1)
-            logits_multi_class_form = torch.zeros((logits.shape[0], 2))
-            logits_multi_class_form[:, 1] = logits
-            logits_multi_class_form[:, 0] = 1 - logits
-        else:
-            raise Exception
-
-        return logits_multi_class_form
-
-    def new_classifier(self, fixed_p, ref, y):
-        def call_get_logits(tobe_perturbed_p):
-            return self.get_logits(tobe_perturbed_p, fixed_p, ref, y)
-
-        return call_get_logits
 
     def backward_train(self):
         torch.mean(self.loss_total).backward()
