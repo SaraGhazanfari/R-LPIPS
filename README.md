@@ -35,7 +35,7 @@ To test the robustness of the trained model to adversarial data we have provided
 
 ```
 python3 test_dataset_model.py --use_gpu --net alex --test_mode adversarial --perturbed_input x_0 --attack_type linf \
---model_path ./checkpoints/path/to/model.pth --data_path /path/to/data
+--model_path checkpoints/path/to/model.pth --data_path /path/to/data
 
 ```
 
@@ -59,7 +59,7 @@ and R-LPIPS (tune) that we want to compare their robustness.
 the --target_model_idx is the model that we want to perform attack on. It can be any of the first or second model.
 
 The trained model for different versions of R-LPIPS is included in the checkpoints directory of the project:
-* latest_net_linf.pth: Adversarially trained LPIPS with Linf over x_0
+* latest_net_linf_x0.pth: Adversarially trained LPIPS with Linf over x_0
 * latest_net_linf_x1.pth: Adversarially trained LPIPS with Linf over x_1
 * latest_net_linf_ref.pth: Adversarially trained LPIPS with Linf over reference image (x)
 * latest_net_linf_x0_x1.pth: Adversarially trained LPIPS with Linf over x_0 and x_1
