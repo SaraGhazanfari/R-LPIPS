@@ -57,6 +57,7 @@ The  --attack_type can be linf, l2 and aug, which is the BYOL augmentation pipel
 The --first_model_path and --second_model_path are the trained LPIPS models, i.e. LPIPS, R-LPIPS or R-LPIPS(lin)
 and R-LPIPS (tune) that we want to compare their robustness.
 the --target_model_idx is the model that we want to perform attack on. It can be any of the first or second model.
+the --hist_y_max, --hist_y_bin_size, --hist_x_max and --hist_x_bin_size are optional and you can set to have more elegant figures.
 
 The trained model for different versions of R-LPIPS is included in the checkpoints directory of the project:
 * latest_net_linf_x0.pth: Adversarially trained LPIPS with Linf over x_0

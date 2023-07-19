@@ -123,8 +123,11 @@ if __name__ == '__main__':
     parser.add_argument('--second_model_path', type=str, help='second model path', default=None)
     parser.add_argument('--target_model_idx', type=int, help='idx of the target model to generate attack against',
                         default=None)
-    parser.add_argument('--hist_path', type=str, help='destination path for the histogram',
-                        default='hist.pdf')
+    parser.add_argument('--hist_path', type=str, help='destination path for the histogram', default='hist.pdf')
+    parser.add_argument('--hist_x_max', type=int, help='max value for the x axis', default=1.8)
+    parser.add_argument('--hist_x_bin_size', type=int, help='bin size for x axis', default=0.2)
+    parser.add_argument('--hist_y_max', type=int, help='max value for the y axis', default=800)
+    parser.add_argument('--hist_y_bin_size', type=int, help='bin size for y axis', default=50)
 
     args = parser.parse_args()
 
@@ -141,20 +144,20 @@ if __name__ == '__main__':
     if args.attack_type == 'aug':
         lpips_list, r_lpips_list, linf_list, l2_list = generate_semantic_attack_against_LPIPS_model_using_byol(
             lpips_metric, first_feature_model, second_feature_model)
-        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 800, 50, 1.2, 0.2
+
     elif args.target_model_idx == 1:
         lpips_list, r_lpips_list, linf_list, l2_list = generate_lp_attack_against_LPIPS_model(
             lpips_metric=lpips_metric, second_feature_model=second_feature_model,
             first_feature_model=first_feature_model, target_model=first_feature_model, show_image=False, threshold=0,
             p=p)
-        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 250, 20, 1.8, 0.2
+
 
     else:  # args.target_model_idx == 2
         lpips_list, r_lpips_list, linf_list, l2_list = generate_lp_attack_against_LPIPS_model(
             lpips_metric=lpips_metric, second_feature_model=second_feature_model,
             first_feature_model=first_feature_model, target_model=second_feature_model, show_image=False, threshold=0,
             p=p)
-        y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = 250, 20, 1.8, 0.2
 
+    y_bins_max, y_bins_slot, x_bins_max, x_bins_slot = args.hist_y_max, args.hist_y_bin_size, args.hist_x_max, args.hist_x_bin_size
     plot_histogram(lpips_list, r_lpips_list, save_path=args.hist_path, y_bins_max=y_bins_max, y_bins_slot=y_bins_slot,
                    x_bins_max=x_bins_max, x_bins_slot=x_bins_slot)
