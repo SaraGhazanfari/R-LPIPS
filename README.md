@@ -25,7 +25,7 @@ python train.py --train_trunk --use_gpu --net alex --name alexnet_adv_linf_x0_tu
 * For --train_mode, both "natural" and "adversarial" are available. 
 * For --attack_type three options can be used "linf", "l2"
 and <a href="https://openaccess.thecvf.com/content/CVPR2022/papers/Luo_Frequency-Driven_Imperceptible_Adversarial_Attack_on_Semantic_Similarity_CVPR_2022_paper.pdf" target="_blank">
-Semantic Similarity Attack</a>.
+"Semantic Similarity Attack"</a>.
 * For --perturbed_input three options are available "x_0" or "x_1" or "x_0/x_1".
 
 To test the robustness of the trained model to adversarial data we have provided two options:
