@@ -1,5 +1,6 @@
 # R-LPIPS
 
+### [Paper](https://arxiv.org/pdf/2307.15157) | [Bibtex](#bibtex)
 Robust Learned Perceptual Image Patch Similarity.
 This project is applying Adversarial Training to
 <a href="https://github.com/richzhang/PerceptualSimilarity" target="_blank">LPIPS model</a>
@@ -65,7 +66,7 @@ The trained model for different versions of R-LPIPS is included in the checkpoin
 * latest_net_linf_x0_tune.pth: Adversarially trained LPIPS in tune mode with Linf over x_0
 * latest_net_SSA_x0_tune.pth: Adversarially trained LPIPS with Semantic Similarity Attack (SSA) over x_0
 
-
+<a name="bibtex"></a>
 ## Citation
 ```
 @article{ghazanfari2023r,
