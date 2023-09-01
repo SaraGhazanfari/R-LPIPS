@@ -64,3 +64,14 @@ The trained model for different versions of R-LPIPS is included in the checkpoin
 * latest_net_linf_x0_x1.pth: Adversarially trained LPIPS with Linf over x_0 and x_1
 * latest_net_linf_x0_tune.pth: Adversarially trained LPIPS in tune mode with Linf over x_0
 * latest_net_SSA_x0_tune.pth: Adversarially trained LPIPS with Semantic Similarity Attack (SSA) over x_0
+
+
+## Citation
+```
+@article{ghazanfari2023r,
+  title={R-LPIPS: An Adversarially Robust Perceptual Similarity Metric},
+  author={Ghazanfari, Sara and Garg, Siddharth and Krishnamurthy, Prashanth and Khorrami, Farshad and Araujo, Alexandre},
+  journal={arXiv preprint arXiv:2307.15157},
+  year={2023}
+}
+```
