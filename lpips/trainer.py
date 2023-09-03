@@ -9,7 +9,7 @@ from tqdm import tqdm
 import lpips
 import os
 
-DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 
 class Trainer():

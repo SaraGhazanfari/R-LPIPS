@@ -10,7 +10,7 @@ import torch.nn
 
 import lpips
 
-DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("cpu")
 
 
 def spatial_average(in_tens, keepdim=True):

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn
 from torchvision import models as torchvision_models
 
-DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("mps")
+DEVICE = torch.device('cuda:0') if torch.cuda.is_available() else torch.device("cpu")
 
 
 class ScalingLayer(nn.Module):
