@@ -1,4 +1,4 @@
-# R-LPIPS
+# R-LPIPS -  2nd ICML Workshop on New Frontiers in AdvML
 
 ### [Paper](https://arxiv.org/pdf/2307.15157) | [Bibtex](#bibtex)
 Robust Learned Perceptual Image Patch Similarity.
