@@ -147,7 +147,7 @@ class Trainer():
             delta.grad.zero_()
         return delta.detach()
 
-    def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=1.0, idx=0):
+    def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=2.0, idx=0):
         batch_size = self.var_p0.shape[0]
         delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
         for t in range(num_iter):
@@ -341,10 +341,6 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     gts = np.array(gts)
     # todo get it back to the original
     outputs = np.stack((d1s, d0s), axis=1)
-    print(outputs.argmax(1))
-    print('-----------------------------------')
-    print(np.round(gts))
-    print('-----------------------------------')
     correct = outputs.argmax(1) == np.round(gts)
     scores = (d0s < d1s) * (1. - gts) + (d1s < d0s) * gts + (d1s == d0s) * .5
     print(np.mean(correct))
