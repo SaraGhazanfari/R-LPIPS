@@ -343,7 +343,7 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     outputs = np.stack((d1s, d0s), axis=1)
     print(outputs.argmax(1))
     print('-----------------------------------')
-    print(gts)
+    print(np.round(gts))
     print('-----------------------------------')
     correct = outputs.argmax(1) == np.round(gts)
     scores = (d0s < d1s) * (1. - gts) + (d1s < d0s) * gts + (d1s == d0s) * .5
