@@ -341,7 +341,7 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     gts = np.array(gts)
     # todo get it back to the original
     outputs = np.stack((d1s, d0s), axis=1)
-    print(outputs.max(1))
+    print(outputs.max(1)[1])
     print('-----------------------------------')
     print(gts)
     print('-----------------------------------')
