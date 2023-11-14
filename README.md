@@ -1,6 +1,6 @@
-# R-LPIPS
+# R-LPIPS -  2nd ICML Workshop on New Frontiers in AdvML
 
-### [Paper](https://arxiv.org/pdf/2307.15157) | [Bibtex](#bibtex)
+### [Paper](https://arxiv.org/pdf/2307.15157) | [Bibtex](#bibtex) | [BAPPS Dataset](https://drive.google.com/file/d/1X3ESpwLdLTyWTC44dBRBp6jY1qpPS1w9/view?usp=share_link)
 Robust Learned Perceptual Image Patch Similarity.
 This project is applying Adversarial Training to
 <a href="https://github.com/richzhang/PerceptualSimilarity" target="_blank">LPIPS model</a>
