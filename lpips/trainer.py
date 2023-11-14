@@ -341,7 +341,7 @@ def score_2afc_dataset(data_loader, trainer, name=''):
     gts = np.array(gts)
     # todo get it back to the original
     outputs = np.stack((d1s, d0s), axis=1)
-    correct = outputs.max(1)[1] == torch.round(gts)
+    correct = outputs.max(1)[1] == np.round(gts)
     scores = (d0s < d1s) * (1. - gts) + (d1s < d0s) * gts + (d1s == d0s) * .5
     return np.mean(correct)
     #return (np.mean(scores), dict(d0s=d0s, d1s=d1s, gts=gts, scores=scores))
