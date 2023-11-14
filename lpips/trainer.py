@@ -147,7 +147,7 @@ class Trainer():
             delta.grad.zero_()
         return delta.detach()
 
-    def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=2.0, idx=0):
+    def pgd_l2_attack(self, num_iter=50, alpha=1e4, epsilon=3.0, idx=0):
         batch_size = self.var_p0.shape[0]
         delta = torch.zeros_like(self.var_p0, requires_grad=True).to(DEVICE)
         for t in range(num_iter):
